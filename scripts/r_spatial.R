@@ -226,6 +226,7 @@ ggsave("/Users/noorhoogerduijnstrating/Documents/RUG/Github/APCE24/spatial-r-noo
 # Reproject woodybiom to match studyarea's CRS (EPSG:4326)
 woodybiom_tf <- terra::project(woodybiom, "EPSG:4326")
 elevation_tf <- terra::project(elevation, "EPSG:4326")
+rainfall_tf <- terra::project(rainfall, "EPSG:4326")
 
 # Define x and y limits based on the extent of studyarea
 xlimits_sa <- c(sf::st_bbox(studyarea)$xmin, sf::st_bbox(studyarea)$xmax)
@@ -290,6 +291,31 @@ elevation_map_sa<-ggplot() +
   ggspatial::annotation_scale(location="bl",width_hint=0.2)
 elevation_map_sa
 
+# make a rainfall map for the study area
+rainfall_sa<-terra::crop(rainfall_tf, studyarea)
+
+rainfall_map_sa<-ggplot() +
+  tidyterra::geom_spatraster(data=rainfall_sa) +
+  scale_fill_gradientn(colours=rev(viridis::viridis(10)),
+                       limits=c(1000,3000),
+                       oob=squish,
+                       name="mm") +
+  tidyterra::geom_spatvector(data=protected_areas,
+                             fill=NA,linewidth=0.5) +
+  tidyterra::geom_spatvector(data=studyarea,
+                             fill=NA,linewidth=0.5,col="red") +
+  tidyterra::geom_spatvector(data=lakes,
+                             fill="lightblue",linewidth=0.5) +
+  tidyterra::geom_spatvector(data=rivers,
+                             col="blue",linewidth=0.5) +
+  labs(title="Rainfall in the study area") +
+  coord_sf(xlimits,ylimits,expand=F,
+           datum = sf::st_crs(32736)) +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank()) +
+  ggspatial::annotation_scale(location="bl",width_hint=0.2)
+rainfall_map_sa
+
 
 # create 500 random points in our study area
 
@@ -330,7 +356,7 @@ map_dist2river_sa
 
 
 ### put all maps together
-all_maps_sa<-woody_map_sa +map_dist2river_sa + elevation_map_sa
+all_maps_sa<-woody_map_sa +map_dist2river_sa + elevation_map_sa + rainfall_map_sa
   patchwork::plot_layout(ncol=2)
 all_maps_sa
 ggsave("/Users/noorhoogerduijnstrating/Documents/RUG/Github/APCE24/spatial-r-noorhstrating/figures/all_maps_sa.png", width = 18, height = 18, units = "cm",dpi=300)
