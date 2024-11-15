@@ -476,7 +476,7 @@ burnfreq_map_sa
 #landform_map_sa_layers
 
 # landform valleys and plains (CEC)
-landform_sa_vp<-terra::rast("/Users/noorhoogerduijnstrating/Documents/RUG/Master ConsEco/APCE 24/APCE24GIS/apce2024gis/landform/hills.tif")
+landform_sa_vp<-terra::rast("/Users/noorhoogerduijnstrating/Documents/RUG/Master ConsEco/APCE 24/APCE24GIS/apce2024gis/landform/valleys.tif")
 landform_tf_vp <- terra::project(landform_sa_vp, "EPSG:4326")
 landform_tf_vp <- terra::crop(landform_tf_vp, studyarea)
 
