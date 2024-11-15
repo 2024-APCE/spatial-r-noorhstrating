@@ -96,6 +96,7 @@ woodybiom<-terra::rast("./2016_WoodyVegetation/TBA_gam_utm36S.tif")
 hillshade<-terra::rast("./2023_elevation/hillshade_z5.tif")
 rainfall<-terra::rast("./rainfall/CHIRPS_MeanAnnualRainfall.tif")
 elevation<-terra::rast("./2023_elevation/elevation_90m.tif")
+fires <- terra::rast("/Users/noorhoogerduijnstrating/Documents/RUG/Master ConsEco/APCE 24/APCE24GIS/apce2024gis/landform/YearLastBurned.tif")
 
 # inspect the data 
 class(protected_areas)
@@ -152,9 +153,9 @@ woody_map <- ggplot() +
   tidyterra::geom_spatvector(data=protected_areas,
                              fill=NA, linewidth=0.5) +
   tidyterra::geom_spatvector(data=lakes,
-                             fill="royalblue3", linewidth=0.5) +
+                             fill="deepskyblue2", linewidth=0.5) +
   tidyterra::geom_spatvector(data=rivers,
-                            col="deepskyblue2", linewidth=0.5) +
+                            col="royalblue3", linewidth=0.5) +
   tidyterra::geom_spatvector(data=studyarea_test,
                              fill=NA, linewidth=0.5, col="red") +
   labs(title = "Woody biomass") +
@@ -209,6 +210,28 @@ rainfall_map <- ggplot() +
   ggspatial::annotation_scale(location="bl", width_hint = 0.2) # first graph that is needed in your document
 rainfall_map
 
+# make a map for the fires 
+fire_map <- ggplot() +
+  tidyterra::geom_spatraster(data=fires) +
+  scale_fill_gradientn(colours=rev(viridis::viridis(10)), 
+                       limits=c(2001, 2024), # can be found in QGIS
+                       oob=squish, # everything that is outside the scale will not be commited
+                       name="Year") +
+  tidyterra::geom_spatvector(data=protected_areas,
+                             fill=NA, linewidth=0.5) +
+  tidyterra::geom_spatvector(data=lakes,
+                             fill="deepskyblue2", linewidth=0.5) +
+  tidyterra::geom_spatvector(data=rivers,
+                             col="royalblue3", linewidth=0.5) +
+  tidyterra::geom_spatvector(data=studyarea_test,
+                             fill=NA, linewidth=0.5, col="red") +
+  labs(title = "Burned last year") +
+  coord_sf(xlimits, ylimits, datum = sf::st_crs(32736)) +
+  theme(axis.text = element_blank(),
+        axis.ticks= element_blank()) +
+  ggspatial::annotation_scale(location="bl", width_hint = 0.2) # first graph that is needed in your document 
+fire_map
+
 
 # combine the different maps  into one composite map using the patchwork library
 # and save it to a high resolution png
@@ -227,6 +250,7 @@ ggsave("/Users/noorhoogerduijnstrating/Documents/RUG/Github/APCE24/spatial-r-noo
 woodybiom_tf <- terra::project(woodybiom, "EPSG:4326")
 elevation_tf <- terra::project(elevation, "EPSG:4326")
 rainfall_tf <- terra::project(rainfall, "EPSG:4326")
+fires_tf <- terra::project(fires, "EPSG:4326")
 
 # Define x and y limits based on the extent of studyarea
 xlimits_sa <- c(sf::st_bbox(studyarea)$xmin, sf::st_bbox(studyarea)$xmax)
@@ -236,6 +260,7 @@ ylimits_sa <- c(sf::st_bbox(studyarea)$ymin, sf::st_bbox(studyarea)$ymax)
 xlimits<-sf::st_bbox(studyarea)[c(1,3)]
 ylimits<-sf::st_bbox(studyarea)[c(2,4)]
 saExt<-terra::ext(studyarea)
+saExt
 
 # crop the woody biomass to the extent of the studyarea
 woodybiom_sa <- terra::crop(woodybiom_tf, studyarea)
@@ -294,10 +319,19 @@ elevation_map_sa
 # make a rainfall map for the study area
 rainfall_sa<-terra::crop(rainfall_tf, studyarea)
 
+# first you need to increase the raster resolution to 30 m
+# define the extent and resolution for the new raster
+# Define the extent and resolution for the new raster
+rainfall_30m <- rast(terra::ext(rainfall), resolution = 30, crs = crs(rainfall))
+# Resample the raster to 30m resolution
+rainfall_30m <- terra::resample(rainfall, rainfall_30m, method = "bilinear")
+rainfall_30m <- terra::project(rainfall_30m, "EPSG:4326")
+rainfall_sa<-terra::crop(rainfall_30m,saExt) # crop to study area
+
 rainfall_map_sa<-ggplot() +
   tidyterra::geom_spatraster(data=rainfall_sa) +
   scale_fill_gradientn(colours=rev(viridis::viridis(10)),
-                       limits=c(1000,3000),
+                       limits=c(600,1000),
                        oob=squish,
                        name="mm") +
   tidyterra::geom_spatvector(data=protected_areas,
